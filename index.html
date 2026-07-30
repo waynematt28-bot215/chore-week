@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f6f1e8" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Chore Week" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <title>Chore Week</title>
+  <style>
+    :root{
+      --bg:#f6f1e8; --card:#fffdf9; --ink:#24231f; --muted:#777268;
+      --line:#e6ded0; --accent:#3f6654; --accent2:#dce8df; --danger:#a44848;
+      --shadow:0 10px 30px rgba(63,52,38,.08);
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    body{min-height:100vh;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+    button,input,select{font:inherit}
+    button{cursor:pointer}
+    .app{max-width:760px;margin:auto;padding:20px 16px 110px}
+    header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin:8px 0 18px}
+    h1{font-size:32px;line-height:1;margin:0 0 8px}
+    .sub{color:var(--muted);font-size:14px}
+    .progress-card{background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:20px;padding:16px;margin-bottom:16px}
+    .progress-top{display:flex;justify-content:space-between;gap:12px;margin-bottom:10px;font-weight:700}
+    .bar{height:12px;background:#ece6da;border-radius:999px;overflow:hidden}
+    .fill{height:100%;width:0;background:var(--accent);transition:.25s}
+    .toolbar{display:flex;gap:8px;overflow:auto;padding-bottom:6px;margin-bottom:14px}
+    .chip{border:1px solid var(--line);background:var(--card);padding:10px 13px;border-radius:999px;white-space:nowrap;color:var(--muted)}
+    .chip.active{background:var(--accent);color:white;border-color:var(--accent)}
+    .group{background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:20px;margin:0 0 14px;overflow:hidden}
+    .group-head{display:flex;justify-content:space-between;align-items:center;padding:15px 16px;border-bottom:1px solid var(--line)}
+    .group-title{font-size:18px;font-weight:800}
+    .group-count{font-size:13px;color:var(--muted);margin-top:3px}
+    .task{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line)}
+    .task:last-child{border-bottom:0}
+    .check{width:28px;height:28px;border:2px solid #aaa294;border-radius:9px;background:white;display:grid;place-items:center;color:white;font-weight:900}
+    .task.done .check{background:var(--accent);border-color:var(--accent)}
+    .task.done .task-name{text-decoration:line-through;color:var(--muted)}
+    .task-name{font-weight:700}
+    .task-meta{font-size:13px;color:var(--muted);margin-top:4px}
+    .timer-btn{border:0;background:var(--accent2);color:var(--accent);font-weight:800;padding:9px 11px;border-radius:12px;min-width:74px}
+    .timer-btn.running{background:var(--accent);color:white}
+    .empty{padding:28px 18px;text-align:center;color:var(--muted)}
+    .icon-btn{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 12px}
+    .fab{position:fixed;right:18px;bottom:calc(22px + env(safe-area-inset-bottom));border:0;background:var(--accent);color:white;border-radius:18px;padding:15px 19px;font-weight:800;box-shadow:0 12px 30px rgba(63,102,84,.28)}
+    dialog{border:0;border-radius:22px;padding:0;width:min(92vw,520px);background:var(--card);box-shadow:0 25px 80px rgba(0,0,0,.25)}
+    dialog::backdrop{background:rgba(31,29,25,.45)}
+    .modal{padding:20px}
+    .modal h2{margin:0 0 16px}
+    label{display:block;font-weight:700;font-size:14px;margin:13px 0 6px}
+    input,select{width:100%;padding:13px;border:1px solid var(--line);border-radius:12px;background:white;color:var(--ink)}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+    .btn{border:1px solid var(--line);background:white;border-radius:12px;padding:11px 14px;font-weight:750}
+    .btn.primary{background:var(--accent);border-color:var(--accent);color:white}
+    .btn.danger{color:var(--danger)}
+    .menu{position:relative}
+    .menu-panel{display:none;position:absolute;right:0;top:46px;z-index:3;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:7px;min-width:180px}
+    .menu-panel.show{display:block}
+    .menu-panel button{display:block;width:100%;text-align:left;border:0;background:transparent;padding:11px;border-radius:9px}
+    .menu-panel button:hover{background:var(--bg)}
+    @media (max-width:440px){.row{grid-template-columns:1fr}.task{grid-template-columns:auto 1fr}.timer-btn{grid-column:2;justify-self:start}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>Chore Week</h1>
+      <div class="sub" id="weekLabel"></div>
+    </div>
+    <div class="menu">
+      <button class="icon-btn" id="menuBtn" aria-label="Open menu">•••</button>
+      <div class="menu-panel" id="menuPanel">
+        <button id="resetWeekBtn">Reset this week</button>
+        <button id="exportBtn">Export backup</button>
+        <button id="importBtn">Import backup</button>
+        <input type="file" id="importFile" accept="application/json" hidden>
+      </div>
+    </div>
+  </header>
+
+  <section class="progress-card">
+    <div class="progress-top"><span>Weekly progress</span><span id="progressText">0 of 0</span></div>
+    <div class="bar"><div class="fill" id="progressFill"></div></div>
+  </section>
+
+  <div class="toolbar" id="filters">
+    <button class="chip active" data-filter="all">All</button>
+    <button class="chip" data-filter="pending">Pending</button>
+    <button class="chip" data-filter="done">Completed</button>
+  </div>
+
+  <main id="groups"></main>
+</div>
+
+<button class="fab" id="addBtn">＋ Add chore</button>
+
+<dialog id="taskDialog">
+  <form method="dialog" class="modal" id="taskForm">
+    <h2>Add a chore</h2>
+    <label for="taskName">Chore</label>
+    <input id="taskName" maxlength="80" required placeholder="Example: Clean the bathroom">
+
+    <label for="groupName">Group</label>
+    <input id="groupName" list="groupList" maxlength="40" required placeholder="Example: Bathrooms">
+    <datalist id="groupList"></datalist>
+
+    <div class="row">
+      <div>
+        <label for="day">Day</label>
+        <select id="day">
+          <option>Any day</option><option>Monday</option><option>Tuesday</option>
+          <option>Wednesday</option><option>Thursday</option><option>Friday</option>
+          <option>Saturday</option><option>Sunday</option>
+        </select>
+      </div>
+      <div>
+        <label for="minutes">Timer (minutes)</label>
+        <input id="minutes" type="number" min="0" max="240" value="0">
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn" value="cancel">Cancel</button>
+      <button class="btn primary" value="default" id="saveTaskBtn">Save chore</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+const STORAGE_KEY = "chore-week-v1";
+const defaultData = {
+  chores: [
+    {id: crypto.randomUUID(), name:"Wipe kitchen counters", group:"Kitchen", day:"Monday", minutes:10, done:false},
+    {id: crypto.randomUUID(), name:"Clean bathroom", group:"Bathrooms", day:"Wednesday", minutes:20, done:false},
+    {id: crypto.randomUUID(), name:"Vacuum common areas", group:"Floors", day:"Friday", minutes:15, done:false},
+    {id: crypto.randomUUID(), name:"Wash and fold laundry", group:"Laundry", day:"Saturday", minutes:30, done:false}
+  ],
+  weekKey: currentWeekKey()
+};
+let data = loadData();
+let filter = "all";
+let timers = {};
+
+function currentWeekKey(){
+  const d = new Date(), day = (d.getDay()+6)%7;
+  const monday = new Date(d); monday.setDate(d.getDate()-day); monday.setHours(0,0,0,0);
+  return monday.toISOString().slice(0,10);
+}
+function ensureCurrentWeek(){
+  if(data.weekKey !== currentWeekKey()){
+    data.chores.forEach(c => c.done = false);
+    data.weekKey = currentWeekKey();
+    saveData();
+  }
+}
+function loadData(){
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || structuredClone(defaultData); }
+  catch { return structuredClone(defaultData); }
+}
+function saveData(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+function weekText(){
+  const start = new Date(data.weekKey+"T00:00:00");
+  const end = new Date(start); end.setDate(start.getDate()+6);
+  const f = d => d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+  return `${f(start)} – ${f(end)}`;
+}
+function render(){
+  ensureCurrentWeek();
+  document.getElementById("weekLabel").textContent = weekText();
+  const total = data.chores.length, done = data.chores.filter(c=>c.done).length;
+  document.getElementById("progressText").textContent = `${done} of ${total}`;
+  document.getElementById("progressFill").style.width = total ? `${done/total*100}%` : "0%";
+
+  const groups = [...new Set(data.chores.map(c=>c.group))].sort();
+  const root = document.getElementById("groups");
+  root.innerHTML = "";
+  const visibleGroups = groups.filter(g => data.chores.some(c => c.group===g && visible(c)));
+
+  if(!visibleGroups.length){
+    root.innerHTML = `<div class="group"><div class="empty">No chores in this view.</div></div>`;
+  }
+  visibleGroups.forEach(group => {
+    const all = data.chores.filter(c=>c.group===group);
+    const chores = all.filter(visible);
+    const section = document.createElement("section");
+    section.className = "group";
+    section.innerHTML = `
+      <div class="group-head">
+        <div><div class="group-title">${escapeHtml(group)}</div>
+        <div class="group-count">${all.filter(c=>c.done).length} of ${all.length} complete</div></div>
+      </div>`;
+    chores.forEach(chore => section.appendChild(taskNode(chore)));
+    root.appendChild(section);
+  });
+  updateGroupList(groups);
+}
+function visible(c){ return filter==="all" || (filter==="pending" ? !c.done : c.done); }
+function taskNode(chore){
+  const el = document.createElement("div");
+  el.className = "task" + (chore.done ? " done" : "");
+  const timer = timers[chore.id];
+  const timerText = timer ? formatTime(timer.remaining) : (chore.minutes ? `${chore.minutes} min` : "No timer");
+  el.innerHTML = `
+    <button class="check" aria-label="Toggle completion">${chore.done ? "✓" : ""}</button>
+    <div>
+      <div class="task-name">${escapeHtml(chore.name)}</div>
+      <div class="task-meta">${escapeHtml(chore.day)} · ${chore.minutes ? chore.minutes+" minute timer" : "no timer"}</div>
+    </div>
+    <button class="timer-btn ${timer?.running ? "running":""}" ${chore.minutes ? "" : "disabled"}>${timerText}</button>`;
+  el.querySelector(".check").onclick = () => { chore.done=!chore.done; saveData(); render(); };
+  const timerBtn = el.querySelector(".timer-btn");
+  if(chore.minutes) timerBtn.onclick = () => toggleTimer(chore.id, chore.minutes);
+  let press;
+  el.addEventListener("touchstart",()=> press=setTimeout(()=>deleteTask(chore.id),700),{passive:true});
+  el.addEventListener("touchend",()=>clearTimeout(press));
+  return el;
+}
+function toggleTimer(id, minutes){
+  if(!timers[id]) timers[id]={remaining:minutes*60,running:false,interval:null};
+  const t=timers[id];
+  if(t.running){ clearInterval(t.interval); t.running=false; }
+  else{
+    t.running=true;
+    t.interval=setInterval(()=>{
+      t.remaining--;
+      if(t.remaining<=0){
+        clearInterval(t.interval); t.running=false; t.remaining=0;
+        if("Notification" in window && Notification.permission==="granted") new Notification("Chore timer finished");
+        else alert("Timer finished!");
+      }
+      render();
+    },1000);
+  }
+  render();
+}
+function deleteTask(id){
+  const c=data.chores.find(x=>x.id===id);
+  if(c && confirm(`Delete "${c.name}"?`)){ data.chores=data.chores.filter(x=>x.id!==id); saveData(); render(); }
+}
+function updateGroupList(groups){
+  document.getElementById("groupList").innerHTML=groups.map(g=>`<option value="${escapeHtml(g)}">`).join("");
+}
+function escapeHtml(s){ return s.replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m])); }
+function formatTime(sec){ return `${Math.floor(sec/60)}:${String(sec%60).padStart(2,"0")}`; }
+
+document.getElementById("filters").onclick=e=>{
+  const btn=e.target.closest("[data-filter]"); if(!btn)return;
+  filter=btn.dataset.filter;
+  document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",x===btn)); render();
+};
+const dialog=document.getElementById("taskDialog");
+document.getElementById("addBtn").onclick=()=>dialog.showModal();
+document.getElementById("saveTaskBtn").onclick=e=>{
+  const name=document.getElementById("taskName").value.trim();
+  const group=document.getElementById("groupName").value.trim();
+  if(!name||!group){e.preventDefault();return;}
+  data.chores.push({id:crypto.randomUUID(),name,group,day:document.getElementById("day").value,minutes:+document.getElementById("minutes").value||0,done:false});
+  saveData(); document.getElementById("taskForm").reset(); render();
+};
+document.getElementById("menuBtn").onclick=()=>document.getElementById("menuPanel").classList.toggle("show");
+document.addEventListener("click",e=>{if(!e.target.closest(".menu"))document.getElementById("menuPanel").classList.remove("show")});
+document.getElementById("resetWeekBtn").onclick=()=>{
+  if(confirm("Mark every chore as pending for a fresh week?")){data.chores.forEach(c=>c.done=false);data.weekKey=currentWeekKey();saveData();render();}
+};
+document.getElementById("exportBtn").onclick=()=>{
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="chore-week-backup.json";a.click();
+};
+document.getElementById("importBtn").onclick=()=>document.getElementById("importFile").click();
+document.getElementById("importFile").onchange=async e=>{
+  try{const incoming=JSON.parse(await e.target.files[0].text());if(!Array.isArray(incoming.chores))throw 0;data=incoming;saveData();render();}
+  catch{alert("That backup file could not be imported.");}
+};
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+if("Notification" in window && Notification.permission==="default") Notification.requestPermission().catch(()=>{});
+render();
+</script>
+</body>
+</html>
